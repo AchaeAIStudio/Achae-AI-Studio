@@ -1,1 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>야채스튜디오 🍅</title>
+  <style>
+    body { text-align:center; font-family:Arial; background:#fffbea; padding:40px; }
+    input { width:300px; padding:10px; border-radius:8px; }
+    button { padding:10px 20px; background:#ff8c42; color:white; border:none; border-radius:8px; cursor:pointer; }
+    img { margin-top:20px; width:256px; border-radius:20px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+  </style>
+</head>
+<body>
+  <h1>🥦 야채스튜디오 AI 캐릭터 생성기</h1>
+  <p>예시: 피곤한 브로콜리, 신난 당근, 졸린 토마토</p>
+  <input id="promptInput" placeholder="예: 졸린 브로콜리" />
+  <button onclick="generate()">AI로 만들기</button>
+
+  <div id="loading" style="display:none;">이미지 생성 중... ⏳</div>
+  <div id="result"></div>
+
+  <script>
+    async function generate() {
+      const prompt = document.getElementById("promptInput").value;
+      if (!prompt) return alert("먼저 캐릭터를 입력하세요!");
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("result").innerHTML = "";
+
+      const response = await fetch("https://YOUR-VERCEL-PROJECT.vercel.app/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      });
+
+      const data = await response.json();
+      document.getElementById("loading").style.display = "none";
+
+      if (data.imageUrl) {
+        document.getElementById("result").innerHTML = `
+          <img src="${data.imageUrl}" alt="AI 캐릭터"/>
+          <p><a href="${data.imageUrl}" target="_blank" download>이미지 다운로드</a></p>`;
+      } else {
+        document.getElementById("result").innerText = "이미지 생성 실패 😢";
+      }
+    }
+  </script>
+</body>
+</html>
 

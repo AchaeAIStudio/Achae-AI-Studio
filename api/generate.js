@@ -1,12 +1,16 @@
+// ✅ Node.js 런타임 강제
+export const config = {
+  runtime: "nodejs",
+};
+
 import OpenAI from "openai";
 
 export default async function handler(req, res) {
-  // ✅ 1. CORS 헤더 추가 (모든 출처 허용)
+  // ✅ 1. CORS 허용 (GitHub Pages 포함)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // ✅ 2. OPTIONS 요청일 경우 미리 응답 후 종료
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -16,8 +20,9 @@ export default async function handler(req, res) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // ✅ 3. POST 본문 파싱
-    const { prompt } = await req.json();
+    // ✅ GitHub Pages는 JSON이 아닌 텍스트를 보낼 수 있어서 안전 처리
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const { prompt } = body;
 
     const result = await openai.images.generate({
       model: "gpt-image-1",

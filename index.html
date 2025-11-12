@@ -26,7 +26,8 @@
       document.getElementById("loading").style.display = "block";
       document.getElementById("result").innerHTML = "";
 
-      const response = await fetch("https://YOUR-VERCEL-PROJECT.vercel.app/api/generate", {
+      const response = await fetch("https://achae-ai-studio.vercel.app/api/generate", {
+
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt })

@@ -1,22 +1,30 @@
-// ✅ Vercel에서 Node 런타임 강제
-export const config = { runtime: "nodejs" };
+export const config = {
+  runtime: "nodejs",
+};
 
-// ✅ OpenAI 직접 REST 호출 방식 (SDK 불일치 방지)
+// ✅ 깔끔하게 REST로 처리
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*"); // ✅ GitHub Pages 요청 허용
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  // ✅ OPTIONS 미리 요청일 때 (CORS Preflight)
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is missing");
-    }
+    if (!apiKey) throw new Error("OPENAI_API_KEY is missing!");
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const prompt = body?.prompt || "cute vegetable character";
 
-    // ✅ OpenAI REST API 직접 호출
+    // ✅ OpenAI REST API 호출
     const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
@@ -32,16 +40,15 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("❌ OpenAI API error:", errText);
+      console.error("❌ OpenAI API Error:", errText);
       return res.status(response.status).json({ error: errText });
     }
 
     const data = await response.json();
     const imageUrl = data.data[0].url;
-
     return res.status(200).json({ imageUrl });
-  } catch (error) {
-    console.error("🔥 SERVER ERROR:", error);
-    return res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error("🔥 Server Error:", err);
+    res.status(500).json({ error: err.message });
   }
 }

@@ -2,13 +2,12 @@ export const config = {
   runtime: "nodejs",
 };
 
-// ✅ 깔끔하게 REST로 처리
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*"); // ✅ GitHub Pages 요청 허용
+  // ✅ CORS 허용 (GitHub Pages에서도 접근 가능)
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // ✅ OPTIONS 미리 요청일 때 (CORS Preflight)
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -19,13 +18,18 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is missing!");
+    if (!apiKey) {
+      throw new Error("Missing OpenAI API Key");
+    }
 
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const prompt = body?.prompt || "cute vegetable character";
+    const prompt = body?.prompt;
+    if (!prompt) {
+      return res.status(400).json({ error: "Missing prompt" });
+    }
 
-    // ✅ OpenAI REST API 호출
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    // ✅ OpenAI 이미지 생성 API 호출
+    const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,20 +39,26 @@ export default async function handler(req, res) {
         model: "gpt-image-1",
         prompt: `A cute cartoon-style ${prompt}, full body, pastel colors, minimal background, transparent background`,
         size: "512x512",
+        n: 1,
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("❌ OpenAI API Error:", errText);
-      return res.status(response.status).json({ error: errText });
+    // ✅ 오류 처리
+    if (!openaiResponse.ok) {
+      const errText = await openaiResponse.text();
+      console.error("OpenAI API Error:", errText);
+      return res.status(openaiResponse.status).json({ error: errText });
     }
 
-    const data = await response.json();
-    const imageUrl = data.data[0].url;
+    const data = await openaiResponse.json();
+    const imageUrl = data.data?.[0]?.url;
+    if (!imageUrl) {
+      return res.status(500).json({ error: "No image returned from OpenAI" });
+    }
+
     return res.status(200).json({ imageUrl });
-  } catch (err) {
-    console.error("🔥 Server Error:", err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Server Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }

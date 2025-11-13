@@ -3,7 +3,7 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // ✅ CORS 허용 (GitHub Pages에서도 접근 가능)
+  // ✅ CORS 허용
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -22,13 +22,14 @@ export default async function handler(req, res) {
       throw new Error("Missing OpenAI API Key");
     }
 
+    // ✅ body 파싱
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     const prompt = body?.prompt;
     if (!prompt) {
       return res.status(400).json({ error: "Missing prompt" });
     }
 
-    // ✅ OpenAI 이미지 생성 API 호출
+    // ✅ OpenAI DALL·E 2 호출
     const openaiResponse = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
@@ -36,14 +37,12 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "dall-e-2",
+        model: "dall-e-2", // ✅ 안정적 모델
         prompt: `A cute cartoon-style ${prompt}, full body, pastel colors, minimal background, transparent background`,
-        size: "512x512",
-        n: 1,
+        size: "512x512", // ✅ 허용 크기
       }),
     });
 
-    // ✅ 오류 처리
     if (!openaiResponse.ok) {
       const errText = await openaiResponse.text();
       console.error("OpenAI API Error:", errText);
@@ -51,7 +50,8 @@ export default async function handler(req, res) {
     }
 
     const data = await openaiResponse.json();
-    const imageUrl = data.data?.[0]?.url;
+    const imageUrl = data?.data?.[0]?.url;
+
     if (!imageUrl) {
       return res.status(500).json({ error: "No image returned from OpenAI" });
     }

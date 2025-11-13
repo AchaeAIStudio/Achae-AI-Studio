@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-image-1",
+        model: "dall-e-2",
         prompt: `A cute cartoon-style ${prompt}, full body, pastel colors, minimal background, transparent background`,
         size: "512x512",
         n: 1,
